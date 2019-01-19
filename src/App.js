@@ -10,243 +10,207 @@ import LineChart from "react-timeseries-charts/lib/components/LineChart";
 import Baseline from "react-timeseries-charts/lib/components/Baseline";
 import Legend from "react-timeseries-charts/lib/components/Legend";
 import Resizable from "react-timeseries-charts/lib/components/Resizable";
+import EventMarker from "react-timeseries-charts/lib/components/EventMarker";
 import styler from "react-timeseries-charts/lib/js/styler";
 import logo from './logo.svg';
 import './App.css';
 
 
-function buildPoints(num) {
-  var dataFile = require('./response/response' + num + '.json');
-    let points = [];
-    for (let i = 0; i < dataFile.length; i++) {
-        points.push([i, dataFile[i]['Pressure'], dataFile[i]['RPM'], dataFile[i]['Temperature']]);
-    }
-    return points;
-}
-
-const series= [];
-
-series.push(new TimeSeries({
-    name: "DrillData",
-    columns: ["time", "Pressure", "RPM", "Temperature"],
-    points: buildPoints(1)
-}));
-series.push(new TimeSeries({
-    name: "DrillData",
-    columns: ["time", "Pressure", "RPM", "Temperature"],
-    points: buildPoints(2)
-}));
-series.push(new TimeSeries({
-    name: "DrillData",
-    columns: ["time", "Pressure", "RPM", "Temperature"],
-    points: buildPoints(3)
-}));
-series.push(new TimeSeries({
-    name: "DrillData",
-    columns: ["time", "Pressure", "RPM", "Temperature"],
-    points: buildPoints(4)
-}));
-series.push(new TimeSeries({
-    name: "DrillData",
-    columns: ["time", "Pressure", "RPM", "Temperature"],
-    points: buildPoints(5)
-}));
-series.push(new TimeSeries({
-    name: "DrillData",
-    columns: ["time", "Pressure", "RPM", "Temperature"],
-    points: buildPoints(6)
-}));
-series.push(new TimeSeries({
-    name: "DrillData",
-    columns: ["time", "Pressure", "RPM", "Temperature"],
-    points: buildPoints(7)
-}));
-series.push(new TimeSeries({
-    name: "DrillData",
-    columns: ["time", "Pressure", "RPM", "Temperature"],
-    points: buildPoints(8)
-}));
-series.push(new TimeSeries({
-    name: "DrillData",
-    columns: ["time", "Pressure", "RPM", "Temperature"],
-    points: buildPoints(9)
-}));
-series.push(new TimeSeries({
-    name: "DrillData",
-    columns: ["time", "Pressure", "RPM", "Temperature"],
-    points: buildPoints(10)
-}));
-
-const style = styler([
-    { key: "Pressure", color: "steelblue", width: 2 },
-    { key: "RPM", color: "#F68B24", width: 2 },
-    { key: "Temperature", color: "#668B24", width: 2 }
-]);
-
-
-class CrossHairs extends React.Component {
-    render() {
-        const { x, y } = this.props;
-        const style = { pointerEvents: "none", stroke: "#ccc" };
-        if (!_.isNull(x) && !_.isNull(y)) {
-            return (
-                <g>
-                    <line style={style} x1={0} y1={y} x2={this.props.width} y2={y} />
-                    <line style={style} x1={x} y1={0} x2={x} y2={this.props.height} />
-                </g>
-            );
-        } else {
-            return <g />;
-        }
-    }
-}
-
-class Chart extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {timerange: series[props.response].range(), response: props.response, type: props.type,
-                  tracker: null, x: null, y: null
-    };
-  }
-
-  handleTrackerChanged = tracker => {
-      if (!tracker) {
-          this.setState({ tracker, x: null, y: null });
-      } else {
-          this.setState({ tracker });
-      }
-  };
-
-  handleTimeRangeChange = timerange => {
-      this.setState({ timerange });
-  };
-
-  handleMouseMove = (x, y) => {
-      this.setState({ x, y });
-};
-
+class DisplayData extends Component{
   render() {
-    const f = format("$,.2f");
-    const range = this.state.timerange;
-    let PressureValue, RPMValue, TempValue;
-    if (this.state.tracker) {
-        const index = series[this.state.response].bisect(this.state.tracker);
-        const trackerEvent = series[this.state.response].at(index);
-        PressureValue = `${f(trackerEvent.get("Pressure"))}`;
-        RPMValue = `${f(trackerEvent.get("RPM"))}`;
-        TempValue = `${f(trackerEvent.get("Temperature"))}`;
-      }
-
     return (
-      <div>
-        <div className="row">
-            <div className="col-md-12">
-                <Resizable>
-                    <ChartContainer
-                        timeRange={range}
-                        timeAxisStyle={{
-                            ticks: {
-                                stroke: "#AAA",
-                                opacity: 0.25,
-                                "stroke-dasharray": "1,1"
-                                // Note: this isn't in camel case because this is
-                                // passed into d3's style
-                            },
-                            values: {
-                                fill: "#AAA",
-                                "font-size": 12
-                            }
-                        }}
-                        showGrid={true}
-                        paddingRight={100}
-                        maxTime={series[this.state.response].range().end()}
-                        minTime={series[this.state.response].range().begin()}
-                        timeAxisAngledLabels={true}
-                        timeAxisHeight={65}
-                        onTrackerChanged={this.handleTrackerChanged}
-                        onBackgroundClick={() => this.setState({ selection: null })}
-                        enablePanZoom={true}
-                        onTimeRangeChanged={this.handleTimeRangeChange}
-                        onMouseMove={(x, y) => this.handleMouseMove(x, y)}
-                        minDuration={1}
-                    >
-                        <ChartRow height="400">
-                            <YAxis
-                                id="y"
-                                label="Units"
-                                min={0}
-                                max={100}
-                                style={{
-                                    ticks: {
-                                        stroke: "#AAA",
-                                        opacity: 0.25,
-                                        "stroke-dasharray": "1,1"
-                                        // Note: this isn't in camel case because this is
-                                        // passed into d3's style
-                                    }
-                                }}
-                                showGrid
-                                hideAxisLine
-                                width="60"
-                                type="linear"
-                                format="$,.2f"
-                            />
-                            <Charts>
-                                <LineChart
-                                    axis="y"
-                                    breakLine={false}
-                                    series={series[this.state.response]}
-                                    columns={["Pressure", "RPM", "Temperature"]}
-                                    style={style}
-                                    interpolation="curveBasis"
-                                    highlight={this.state.highlight}
-                                    onHighlightChange={highlight =>
-                                        this.setState({ highlight })
-                                    }
-                                    selection={this.state.selection}
-                                    onSelectionChange={selection =>
-                                        this.setState({ selection })
-                                    }
-                                />
-                                <CrossHairs x={this.state.x} y={this.state.y} />
-                            </Charts>
-                        </ChartRow>
-                    </ChartContainer>
-                </Resizable>
+      <div class="container-fluid">
+        <div class="row">
+
+          <div class="col">
+            <div class="btn-group-vertical">
+              <button type="button" class="btn btn-secondary">Dataset 1</button>
+              <button type="button" class="btn btn-secondary">Dataset 2</button>
+              <button type="button" class="btn btn-secondary">Dataset 3</button>
+              <button type="button" class="btn btn-secondary">Dataset 4</button>
+              <button type="button" class="btn btn-secondary">Dataset 5</button>
+              <button type="button" class="btn btn-secondary">Dataset 6</button>
+              <button type="button" class="btn btn-secondary">Dataset 7</button>
+              <button type="button" class="btn btn-secondary">Dataset 8</button>
             </div>
-        </div>
-        <div className="row">
-            <div className="col-md-12">
-                <span>
-                    <Legend
-                        type="line"
-                        align="right"
-                        style={style}
-                        highlight={this.state.highlight}
-                        onHighlightChange={highlight => this.setState({ highlight })}
-                        selection={this.state.selection}
-                        onSelectionChange={selection => this.setState({ selection })}
-                        categories={[
-                            { key: "Pressure", label: "Pressure", value: PressureValue },
-                            { key: "RPM", label: "RPM", value: RPMValue },
-                            { key: "Temperature", label: "Temperature", value: TempValue }
-                        ]}
-                    />
-                </span>
-            </div>
+          </div>
+
+          <div class="col-4">
+            Additional Data
+          </div>
+
+          <div class="col-6">
+            <Chart response='4' type='Pressure'/>
+          </div>
+
         </div>
       </div>
     );
   }
 }
 
+const NullMarker = props => {
+    return <g />;
+};
+
+class Chart extends Component {
+  constructor(props) {
+    super(props);
+    const temperaturePoints = [];
+    const pressurePoints = [];
+    const rpmPoints = [];
+    var dataFile = require('./response/response' + props.response + '.json');
+    for (let i = 0; i < dataFile.length; i++) {
+        temperaturePoints.push([i, dataFile[i]['Temperature']]);
+        pressurePoints.push([i, dataFile[i]['Pressure']]);
+        rpmPoints.push([i, dataFile[i]['RPM']]);
+    }
+    const tempSeries = new TimeSeries({
+      name: "Temperature",
+      columns: ["time", "Temperature"],
+      points: temperaturePoints
+    });
+    const pressureSeries = new TimeSeries({
+        name: "Pressure",
+        columns: ["time", "Pressure"],
+        points: pressurePoints
+    });
+    const rpmSeries = new TimeSeries({
+        name: "RPM",
+        columns: ["time", "RPM"],
+        points: rpmPoints
+    });
+
+    const scheme = {
+        temp: "#CA4040",
+        pressure: "#9467bd",
+        rpm: "#987951",
+    };
+
+    const style = styler([
+        { key: "temp", color: "#CA4040" },
+        { key: "pressure", color: "#9467bd" },
+        { key: "rpm", color: "#987951" },
+    ]);
+
+    this.state = {timerange: tempSeries.range(),
+                  response: props.response,
+                  tracker: null, x: null, y: null,
+                  trackerValue: "-- °C",
+                  trackerEvent: null,
+                  markerMode: "flag",
+                  tempSeries: tempSeries,
+                  pressureSeries:pressureSeries,
+                  rpmSeries: rpmSeries,
+                  scheme: scheme,
+                  style: style,
+    };
+  }
+
+    render() {
+      return (
+        <div>
+          <div className="row">
+              <div className="col-md-12">
+                  <Resizable>
+                      <ChartContainer
+                          utc={false}
+                          timeRange={this.state.tempSeries.timerange()}
+                          showGridPosition="under"
+                          trackerPosition={this.state.tracker}
+                          trackerTimeFormat="%X"
+                          onTrackerChanged={tracker => this.setState({ tracker })}
+                      >
+                          <ChartRow height="150">
+                              <YAxis
+                                  id="pressure"
+                                  label="Pressure (in)"
+                                  labelOffset={5}
+                                  min={this.state.pressureSeries.min("Pressure")}
+                                  max={this.state.pressureSeries.max("Pressure")}
+                                  width="80"
+                                  type="linear"
+                                  format=",.1f"
+                              />
+                              <Charts>
+                                  <LineChart
+                                      axis="pressure"
+                                      series={this.state.pressureSeries}
+                                      columns={["Pressure"]}
+                                  />
+                              </Charts>
+                          </ChartRow>
+
+                          <ChartRow height="150">
+                              <YAxis
+                                  id="temp"
+                                  label="Temperature (C)"
+                                  labelOffset={5}
+                                  min={this.state.tempSeries.min("Temperature")}
+                                  max={this.state.tempSeries.max("Temperature")}
+                                  width="80"
+                                  type="linear"
+                                  format=",.1f"
+                              />
+                              <Charts>
+                                  <LineChart
+                                      axis="temp"
+                                      series={this.state.tempSeries}
+                                      columns={["Temperature"]}
+                                      interpolation="curveStepBefore"
+                                  />
+                              </Charts>
+                          </ChartRow>
+
+                          <ChartRow height="150">
+                              <YAxis
+                                  id="rpm"
+                                  label="RPM"
+                                  labelOffset={5}
+                                  min={this.state.rpmSeries.min("RPM")}
+                                  max={this.state.rpmSeries.max("RPM")}
+                                  width="80"
+                                  type="linear"
+                                  format=",.2f"
+                              />
+                              <Charts>
+                                  <LineChart
+                                      axis="rpm"
+                                      series={this.state.rpmSeries}
+                                      columns={["RPM"]}
+                                  />
+                              </Charts>
+                          </ChartRow>
+                      </ChartContainer>
+                  </Resizable>
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-12 text-right">
+                <Legend
+                    type="line"
+                    align="right"
+                    stack={true}
+                    style={this.state.style}
+                    categories={[
+                        { key: "temp", label: "Temperature" },
+                        { key: "pressure", label: "Pressure" },
+                        { key: "rpm", label: "RPM" }
+                    ]}
+                />
+              </div>
+            </div>
+          </div>
+    );
+  }
+}
+
+
 class App extends Component {
   render() {
     return (
       <div className="App">
-        <Chart response='4' type='Pressure'/>
-        <Chart response='5' type='Pressure'/>
-        <Chart response='6' type='Pressure'/>
+        <DisplayData/>
       </div>
     );
   }
