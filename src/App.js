@@ -14,52 +14,47 @@ import EventMarker from "react-timeseries-charts/lib/components/EventMarker";
 import styler from "react-timeseries-charts/lib/js/styler";
 import logo from './logo.svg';
 import './App.css';
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 
+library.add(faArrowRight)
 
-class DisplayData extends Component{
+class Navbar extends Component {
   render() {
     return (
-      <div class="container-fluid">
-        <div class="row">
-
-          <div class="col">
-            <div class="btn-group-vertical">
-              <button type="button" class="btn btn-secondary">Dataset 1</button>
-              <button type="button" class="btn btn-secondary">Dataset 2</button>
-              <button type="button" class="btn btn-secondary">Dataset 3</button>
-              <button type="button" class="btn btn-secondary">Dataset 4</button>
-              <button type="button" class="btn btn-secondary">Dataset 5</button>
-              <button type="button" class="btn btn-secondary">Dataset 6</button>
-              <button type="button" class="btn btn-secondary">Dataset 7</button>
-              <button type="button" class="btn btn-secondary">Dataset 8</button>
-            </div>
-          </div>
-
-          <div class="col-4">
-            Additional Data
-          </div>
-
-          <div class="col-6">
-            <Chart response='4' type='Pressure'/>
-          </div>
-
+      <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a className="navbar-brand" href="#">IITHCK02</a>
+        <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span className="navbar-toggler-icon"></span>
+        </button>
+        <div className="collapse navbar-collapse" id="navbarNav">
+          <ul className="navbar-nav">
+            <li className="nav-item active">
+              <a className="nav-link" href="#">Visualize <span className="sr-only">(current)</span></a>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link" href="#">Realtime</a>
+            </li>
+          </ul>
         </div>
-      </div>
+      </nav>
     );
   }
 }
 
-const NullMarker = props => {
-    return <g />;
-};
-
-class Chart extends Component {
-  constructor(props) {
+class DisplayData extends Component{
+  constructor(props){
     super(props);
+    this.state = {dataset: 1}
+  }
+
+  render() {
+    console.log(this.state.dataset)
     const temperaturePoints = [];
     const pressurePoints = [];
     const rpmPoints = [];
-    var dataFile = require('./response/response' + props.response + '.json');
+    var dataFile = require('./response/response' + this.state.dataset + '.json');
     for (let i = 0; i < dataFile.length; i++) {
         temperaturePoints.push([i, dataFile[i]['Temperature']]);
         pressurePoints.push([i, dataFile[i]['Pressure']]);
@@ -81,6 +76,42 @@ class Chart extends Component {
         points: rpmPoints
     });
 
+    return (
+      <div className="row">
+        <div className="col-2">
+          <div className = "row">
+            <div className="btn-group-vertical col-12 rounded-0">
+              <button type="button" className="btn btn-dark btn-lg btn-block rounded-0" onClick={() => this.setState({dataset: 1})}>Dataset 1{(this.state.dataset==1) ? <FontAwesomeIcon icon={faArrowRight} pull="right"/> : ""}</button>
+              <button type="button" className="btn btn-dark btn-lg btn-block" onClick={() => this.setState({dataset: 2})}>Dataset 2{(this.state.dataset==2) ? <FontAwesomeIcon icon={faArrowRight} pull="right"/> : ""}</button>
+              <button type="button" className="btn btn-dark btn-lg btn-block" onClick={() => this.setState({dataset: 3})}>Dataset 3{(this.state.dataset==3) ? <FontAwesomeIcon icon={faArrowRight} pull="right"/> : ""}</button>
+              <button type="button" className="btn btn-dark btn-lg btn-block" onClick={() => this.setState({dataset: 4})}>Dataset 4{(this.state.dataset==4) ? <FontAwesomeIcon icon={faArrowRight} pull="right"/> : ""}</button>
+              <button type="button" className="btn btn-dark btn-lg btn-block" onClick={() => this.setState({dataset: 5})}>Dataset 5{(this.state.dataset==5) ? <FontAwesomeIcon icon={faArrowRight} pull="right"/> : ""}</button>
+              <button type="button" className="btn btn-dark btn-lg btn-block" onClick={() => this.setState({dataset: 6})}>Dataset 6{(this.state.dataset==6) ? <FontAwesomeIcon icon={faArrowRight} pull="right"/> : ""}</button>
+              <button type="button" className="btn btn-dark btn-lg btn-block" onClick={() => this.setState({dataset: 7})}>Dataset 7{(this.state.dataset==7) ? <FontAwesomeIcon icon={faArrowRight} pull="right"/> : ""}</button>
+              <button type="button" className="btn btn-dark btn-lg btn-block" onClick={() => this.setState({dataset: 8})}>Dataset 8{(this.state.dataset==8) ? <FontAwesomeIcon icon={faArrowRight} pull="right"/> : ""}</button>
+              <button type="button" className="btn btn-dark btn-lg btn-block" onClick={() => this.setState({dataset: 9})}>Dataset 9{(this.state.dataset==9) ? <FontAwesomeIcon icon={faArrowRight} pull="right"/> : ""}</button>
+              <button type="button" className="btn btn-dark btn-lg btn-block rounded-0" onClick={() => this.setState({dataset: 10})}>Dataset 10{(this.state.dataset==10) ? <FontAwesomeIcon icon={faArrowRight} pull="right"/> : ""}</button>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-3">
+          <Additional tempSeries={tempSeries} pressureSeries={pressureSeries} rpmSeries={rpmSeries}/>
+        </div>
+
+        <div className="col-7">
+          <br/>
+          <Chart tempSeries={tempSeries} pressureSeries={pressureSeries} rpmSeries={rpmSeries}/>
+        </div>
+
+      </div>
+    );
+  }
+}
+
+class Chart extends Component {
+  constructor(props) {
+    super(props);
     const scheme = {
         temp: "#CA4040",
         pressure: "#9467bd",
@@ -93,123 +124,124 @@ class Chart extends Component {
         { key: "rpm", color: "#987951" },
     ]);
 
-    this.state = {timerange: tempSeries.range(),
-                  response: props.response,
-                  tracker: null, x: null, y: null,
+    this.state = {tracker: null, x: null, y: null,
                   trackerValue: "-- °C",
                   trackerEvent: null,
                   markerMode: "flag",
-                  tempSeries: tempSeries,
-                  pressureSeries:pressureSeries,
-                  rpmSeries: rpmSeries,
+                  tempSeries: props.tempSeries,
+                  pressureSeries: props.pressureSeries,
+                  rpmSeries: props.rpmSeries,
                   scheme: scheme,
                   style: style,
     };
   }
+  componentWillReceiveProps(props) {
+    this.setState({tempSeries: props.tempSeries,
+                   pressureSeries:props.pressureSeries,
+                   rpmSeries: props.rpmSeries})
+  }
+  render() {
+    return (
+      <div className="row">
+        <div className="col-md-12">
+            <Resizable>
+                <ChartContainer
+                    utc={false}
+                    timeRange={this.state.tempSeries.timerange()}
+                    showGridPosition="under"
+                    trackerPosition={this.state.tracker}
+                    trackerTimeFormat="%X"
+                    onTrackerChanged={tracker => this.setState({ tracker })}
+                >
+                    <ChartRow height="150">
+                        <YAxis
+                            id="pressure"
+                            label="Pressure (in)"
+                            labelOffset={5}
+                            min={this.state.pressureSeries.min("Pressure")}
+                            max={this.state.pressureSeries.max("Pressure")}
+                            width="80"
+                            type="linear"
+                            format=",.1f"
+                        />
+                        <Charts>
+                            <LineChart
+                                axis="pressure"
+                                series={this.state.pressureSeries}
+                                columns={["Pressure"]}
+                            />
+                        </Charts>
+                    </ChartRow>
 
-    render() {
-      return (
-        <div>
-          <div className="row">
-              <div className="col-md-12">
-                  <Resizable>
-                      <ChartContainer
-                          utc={false}
-                          timeRange={this.state.tempSeries.timerange()}
-                          showGridPosition="under"
-                          trackerPosition={this.state.tracker}
-                          trackerTimeFormat="%X"
-                          onTrackerChanged={tracker => this.setState({ tracker })}
-                      >
-                          <ChartRow height="150">
-                              <YAxis
-                                  id="pressure"
-                                  label="Pressure (in)"
-                                  labelOffset={5}
-                                  min={this.state.pressureSeries.min("Pressure")}
-                                  max={this.state.pressureSeries.max("Pressure")}
-                                  width="80"
-                                  type="linear"
-                                  format=",.1f"
-                              />
-                              <Charts>
-                                  <LineChart
-                                      axis="pressure"
-                                      series={this.state.pressureSeries}
-                                      columns={["Pressure"]}
-                                  />
-                              </Charts>
-                          </ChartRow>
+                    <ChartRow height="150">
+                        <YAxis
+                            id="temp"
+                            label="Temperature (C)"
+                            labelOffset={5}
+                            min={this.state.tempSeries.min("Temperature")}
+                            max={this.state.tempSeries.max("Temperature")}
+                            width="80"
+                            type="linear"
+                            format=",.1f"
+                        />
+                        <Charts>
+                            <LineChart
+                                axis="temp"
+                                series={this.state.tempSeries}
+                                columns={["Temperature"]}
+                                interpolation="curveStepBefore"
+                            />
+                        </Charts>
+                    </ChartRow>
 
-                          <ChartRow height="150">
-                              <YAxis
-                                  id="temp"
-                                  label="Temperature (C)"
-                                  labelOffset={5}
-                                  min={this.state.tempSeries.min("Temperature")}
-                                  max={this.state.tempSeries.max("Temperature")}
-                                  width="80"
-                                  type="linear"
-                                  format=",.1f"
-                              />
-                              <Charts>
-                                  <LineChart
-                                      axis="temp"
-                                      series={this.state.tempSeries}
-                                      columns={["Temperature"]}
-                                      interpolation="curveStepBefore"
-                                  />
-                              </Charts>
-                          </ChartRow>
-
-                          <ChartRow height="150">
-                              <YAxis
-                                  id="rpm"
-                                  label="RPM"
-                                  labelOffset={5}
-                                  min={this.state.rpmSeries.min("RPM")}
-                                  max={this.state.rpmSeries.max("RPM")}
-                                  width="80"
-                                  type="linear"
-                                  format=",.2f"
-                              />
-                              <Charts>
-                                  <LineChart
-                                      axis="rpm"
-                                      series={this.state.rpmSeries}
-                                      columns={["RPM"]}
-                                  />
-                              </Charts>
-                          </ChartRow>
-                      </ChartContainer>
-                  </Resizable>
-              </div>
-            </div>
-            <div className="row">
-              <div className="col-12 text-right">
-                <Legend
-                    type="line"
-                    align="right"
-                    stack={true}
-                    style={this.state.style}
-                    categories={[
-                        { key: "temp", label: "Temperature" },
-                        { key: "pressure", label: "Pressure" },
-                        { key: "rpm", label: "RPM" }
-                    ]}
-                />
-              </div>
-            </div>
-          </div>
+                    <ChartRow height="150">
+                        <YAxis
+                            id="rpm"
+                            label="RPM"
+                            labelOffset={5}
+                            min={this.state.rpmSeries.min("RPM")}
+                            max={this.state.rpmSeries.max("RPM")}
+                            width="80"
+                            type="linear"
+                            format=",.2f"
+                        />
+                        <Charts>
+                            <LineChart
+                                axis="rpm"
+                                series={this.state.rpmSeries}
+                                columns={["RPM"]}
+                            />
+                        </Charts>
+                    </ChartRow>
+                </ChartContainer>
+            </Resizable>
+        </div>
+      </div>
     );
   }
 }
 
+class Additional extends Component{
+  constructor(props) {
+    super(props);
+    this.state = {tempSeries: props.tempSeries,
+                  pressureSeries: props.pressureSeries,
+                  rpmSeries: props.rpmSeries}
+  }
+
+  render() {
+    return(
+      <h4> Pressure </h4>
+    );
+  }
+
+}
 
 class App extends Component {
   render() {
     return (
       <div className="App">
+        <Navbar/>
         <DisplayData/>
       </div>
     );
