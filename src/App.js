@@ -1,18 +1,14 @@
 import React, { Component } from 'react';
-import _ from "underscore";
 import { format } from "d3-format";
-import { TimeSeries , TimeEvent } from 'pondjs';
+import { TimeSeries } from 'pondjs';
 import ChartContainer from "react-timeseries-charts/lib/components/ChartContainer";
 import ChartRow from "react-timeseries-charts/lib/components/ChartRow";
 import Charts from "react-timeseries-charts/lib/components/Charts";
-import YAxis from "react-timeseries-charts/lib/components/YAxis";
 import LineChart from "react-timeseries-charts/lib/components/LineChart";
-import Baseline from "react-timeseries-charts/lib/components/Baseline";
-import Legend from "react-timeseries-charts/lib/components/Legend";
 import Resizable from "react-timeseries-charts/lib/components/Resizable";
-import EventMarker from "react-timeseries-charts/lib/components/EventMarker";
+import ValueAxis from "react-timeseries-charts/lib/components/ValueAxis";
+import LabelAxis from "react-timeseries-charts/lib/components/LabelAxis";
 import styler from "react-timeseries-charts/lib/js/styler";
-import logo from './logo.svg';
 import './App.css';
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -50,7 +46,6 @@ class DisplayData extends Component{
   }
 
   render() {
-    console.log(this.state.dataset)
     const temperaturePoints = [];
     const pressurePoints = [];
     const rpmPoints = [];
@@ -60,7 +55,7 @@ class DisplayData extends Component{
         pressurePoints.push([i, dataFile[i]['Pressure']]);
         rpmPoints.push([i, dataFile[i]['RPM']]);
     }
-    const tempSeries = new TimeSeries({
+    const temperatureSeries = new TimeSeries({
       name: "Temperature",
       columns: ["time", "Temperature"],
       points: temperaturePoints
@@ -95,13 +90,13 @@ class DisplayData extends Component{
           </div>
         </div>
 
-        <div className="col-3">
-          <Additional tempSeries={tempSeries} pressureSeries={pressureSeries} rpmSeries={rpmSeries}/>
-        </div>
+        {/* <div className="col-3">
+          <Additional temperatureSeries={temperatureSeries} pressureSeries={pressureSeries} rpmSeries={rpmSeries}/>
+        </div> */}
 
         <div className="col-7">
           <br/>
-          <Chart tempSeries={tempSeries} pressureSeries={pressureSeries} rpmSeries={rpmSeries}/>
+          <Chart temperatureSeries={temperatureSeries} pressureSeries={pressureSeries} rpmSeries={rpmSeries}/>
         </div>
 
       </div>
@@ -112,119 +107,192 @@ class DisplayData extends Component{
 class Chart extends Component {
   constructor(props) {
     super(props);
-    const scheme = {
-        temp: "#CA4040",
-        pressure: "#9467bd",
-        rpm: "#987951",
+
+    // Storage for all the data channels
+    const channels = {
+        RPM: { units: "rpm", label: "RPM", format: "d", series: props.rpmSeries, show: true },
+        Temperature: { units: "deg C", label: "Temp", format: "d", series: props.temperatureSeries, show: true },
+        Pressure: { units: "Pa", label: "Pressure", format: ",.1f", series: props.pressureSeries, show: true }
     };
 
-    const style = styler([
-        { key: "temp", color: "#CA4040" },
-        { key: "pressure", color: "#9467bd" },
-        { key: "rpm", color: "#987951" },
-    ]);
+    // Channel names list, in order we want them shown
+    const channelNames = ["Temperature", "Pressure", "RPM"];
 
-    this.state = {tracker: null, x: null, y: null,
-                  trackerValue: "-- °C",
-                  trackerEvent: null,
-                  markerMode: "flag",
-                  tempSeries: props.tempSeries,
-                  pressureSeries: props.pressureSeries,
-                  rpmSeries: props.rpmSeries,
-                  scheme: scheme,
-                  style: style,
+    // Channels we'll actually display on our charts
+    const displayChannels = ["Temperature", "Pressure", "RPM"];
+
+    this.state = {
+        ready: false,
+        channels,
+        channelNames,
+        displayChannels,
+        tracker: null,
+        timerange: props.temperatureSeries.timerange()
     };
   }
+  componentDidMount() {
+    setTimeout(() => {
+        const { channelNames, channels, displayChannels} = this.state;
+        // Make the TimeSeries here from the points collected above
+        for (let channelName of channelNames) {
+            channels[channelName].avg = parseInt(channels[channelName].series.avg(channelName), 10);
+            channels[channelName].max = parseInt(channels[channelName].series.max(channelName), 10);
+            channels[channelName].min = parseInt(channels[channelName].series.max(channelName), 10);
+        }
+        this.setState({ ready: true, channels});
+    }, 0);
+  }
+
   componentWillReceiveProps(props) {
-    this.setState({tempSeries: props.tempSeries,
-                   pressureSeries:props.pressureSeries,
-                   rpmSeries: props.rpmSeries})
+    const {channels, channelNames} = this.state
+    channels.Temperature.series = props.temperatureSeries;
+    channels.Pressure.series = props.pressureSeries;
+    channels.RPM.series = props.rpmSeries;
+    for (let channelName of channelNames) {
+      channels[channelName].avg = parseInt(channels[channelName].series.avg(channelName), 10);
+      channels[channelName].max = parseInt(channels[channelName].series.max(channelName), 10);
+      channels[channelName].max = parseInt(channels[channelName].series.min(channelName), 10);
   }
+    this.setState({channels})
+  }
+
+  handleTrackerChanged = t => {
+    this.setState({ tracker: t });
+  };
+
+  handleChartResize = width => {
+      this.setState({ width });
+  };
+
+  renderChart = () => {
+      return this.renderChannelsChart();
+  };
+
+  renderChannelsChart = () => {
+      const { timerange, displayChannels, channels, maxTime, minTime, minDuration } = this.state;
+      const style = styler([
+        { key: "Temperature", color: "#ff47ff" },
+        { key: "Pressure", color: "green", width: 1, opacity: 0.5 },
+        { key: "RPM", color: "steelblue", width: 1, opacity: 0.5 }
+      ]);
+      const speedFormat = format(".1f");
+      const rows = [];
+
+      for (let channelName of displayChannels) {
+          const charts = [];
+          let series = channels[channelName].series;
+          charts.push(
+              <LineChart
+                  key={`line-${channelName}`}
+                  axis={`${channelName}_axis`}
+                  series={series}
+                  columns={[channelName]}
+                  style={style}
+                  breakLine
+              />
+          );
+
+          // Get the value at the current tracker position for the ValueAxis
+          let value = "--";
+          if (this.state.tracker) {
+              const approx =
+                  (+this.state.tracker - +timerange.begin()) /
+                  (+timerange.end() - +timerange.begin());
+              const ii = Math.floor(approx * series.size());
+              const i = series.bisect(new Date(this.state.tracker), ii);
+              const v = i < series.size() ? series.at(i).get(channelName) : null;
+              if (v) {
+                  value = parseInt(v, 10);
+              }
+          }
+
+          // Get the summary values for the LabelAxis
+          const summary = [
+              { label: "Max", value: speedFormat(channels[channelName].max) },
+              { label: "Avg", value: speedFormat(channels[channelName].avg) }
+          ];
+          rows.push(
+              <ChartRow
+                  height="120"
+                  visible={channels[channelName].show}
+                  key={`row-${channelName}`}
+              >
+                  <LabelAxis
+                      id={`${channelName}_axis`}
+                      label={channels[channelName].label}
+                      values={summary}
+                      min={0}
+                      max={channels[channelName].max}
+                      width={130}
+                      type="linear"
+                      format=",.1f"
+                  />
+                  <Charts>{charts}</Charts>
+                  <ValueAxis
+                      id={`${channelName}_valueaxis`}
+                      value={value}
+                      detail={channels[channelName].units}
+                      width={80}
+                      min={0}
+                      max={35}
+                  />
+              </ChartRow>
+          );
+      }
+
+      return (
+          <ChartContainer
+              timeRange={this.state.timerange}
+              format="relative"
+              showGrid={false}
+              enablePanZoom
+              trackerPosition={this.state.tracker}
+              onChartResize={width => this.handleChartResize(width)}
+              onTrackerChanged={this.handleTrackerChanged}
+          >
+              {rows}
+          </ChartContainer>
+      );
+  };
+
+
   render() {
-    return (
-      <div className="row">
-        <div className="col-md-12">
-            <Resizable>
-                <ChartContainer
-                    utc={false}
-                    timeRange={this.state.tempSeries.timerange()}
-                    showGridPosition="under"
-                    trackerPosition={this.state.tracker}
-                    trackerTimeFormat="%X"
-                    onTrackerChanged={tracker => this.setState({ tracker })}
-                >
-                    <ChartRow height="150">
-                        <YAxis
-                            id="pressure"
-                            label="Pressure (in)"
-                            labelOffset={5}
-                            min={this.state.pressureSeries.min("Pressure")}
-                            max={this.state.pressureSeries.max("Pressure")}
-                            width="80"
-                            type="linear"
-                            format=",.1f"
-                        />
-                        <Charts>
-                            <LineChart
-                                axis="pressure"
-                                series={this.state.pressureSeries}
-                                columns={["Pressure"]}
-                            />
-                        </Charts>
-                    </ChartRow>
+    const { ready, channels, displayChannels } = this.state;
+        if (!ready) {
+            return <div>{`Building rollups...`}</div>;
+        }
+        const chartStyle = {
+            borderStyle: "solid",
+            borderWidth: 1,
+            borderColor: "#DDD",
+            paddingTop: 10,
+            marginBottom: 10
+        };
+        // Generate the legend
+        const legend = displayChannels.map(channelName => ({
+            key: channelName,
+            label: channels[channelName].label,
+            disabled: !channels[channelName].show
+        }));
 
-                    <ChartRow height="150">
-                        <YAxis
-                            id="temp"
-                            label="Temperature (C)"
-                            labelOffset={5}
-                            min={this.state.tempSeries.min("Temperature")}
-                            max={this.state.tempSeries.max("Temperature")}
-                            width="80"
-                            type="linear"
-                            format=",.1f"
-                        />
-                        <Charts>
-                            <LineChart
-                                axis="temp"
-                                series={this.state.tempSeries}
-                                columns={["Temperature"]}
-                                interpolation="curveStepBefore"
-                            />
-                        </Charts>
-                    </ChartRow>
-
-                    <ChartRow height="150">
-                        <YAxis
-                            id="rpm"
-                            label="RPM"
-                            labelOffset={5}
-                            min={this.state.rpmSeries.min("RPM")}
-                            max={this.state.rpmSeries.max("RPM")}
-                            width="80"
-                            type="linear"
-                            format=",.2f"
-                        />
-                        <Charts>
-                            <LineChart
-                                axis="rpm"
-                                series={this.state.rpmSeries}
-                                columns={["RPM"]}
-                            />
-                        </Charts>
-                    </ChartRow>
-                </ChartContainer>
-            </Resizable>
-        </div>
-      </div>
-    );
-  }
+        return (
+            <div>
+                <div className="row">
+                    <div className="col-md-12" style={chartStyle}>
+                        <Resizable>
+                            {ready ? this.renderChart() : <div>Loading.....</div>}
+                        </Resizable>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 }
 
 class Additional extends Component{
   constructor(props) {
     super(props);
-    this.state = {tempSeries: props.tempSeries,
+    this.state = {temperatureSeries: props.temperatureSeries,
                   pressureSeries: props.pressureSeries,
                   rpmSeries: props.rpmSeries}
   }
