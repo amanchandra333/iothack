@@ -137,7 +137,6 @@ class Chart extends Component {
         for (let channelName of channelNames) {
             channels[channelName].avg = parseInt(channels[channelName].series.avg(channelName), 10);
             channels[channelName].max = parseInt(channels[channelName].series.max(channelName), 10);
-            channels[channelName].min = parseInt(channels[channelName].series.max(channelName), 10);
         }
         this.setState({ ready: true, channels});
     }, 0);
@@ -151,7 +150,6 @@ class Chart extends Component {
     for (let channelName of channelNames) {
       channels[channelName].avg = parseInt(channels[channelName].series.avg(channelName), 10);
       channels[channelName].max = parseInt(channels[channelName].series.max(channelName), 10);
-      channels[channelName].max = parseInt(channels[channelName].series.min(channelName), 10);
   }
     this.setState({channels})
   }
